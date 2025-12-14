@@ -158,4 +158,18 @@ def db_test():
 # ------------------------------
 @app.get("/")
 def home():
-    return jsonify({"status": "online"})
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        conn.close()
+        return jsonify({"status": "online", "db": "ok"})
+    except Exception as e:
+        return jsonify({
+            "status": "online",
+            "db": "erro",
+            "detalhe": str(e)
+        })
+
+n
