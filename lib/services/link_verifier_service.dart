@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class LinkVerifierService {
-  static const String baseUrl = "http://192.168.1.6:5000"; // IP DO SEU PC
+  static const String baseUrl = "https://phishing-app-uktc.onrender.com"; // IP DO SEU PC
 
   Future<bool> verifyLink(String url) async {
     final response = await http.post(
