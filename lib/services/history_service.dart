@@ -22,7 +22,7 @@ class HistoryItem {
 }
 
 class HistoryService {
-  static const String baseUrl = "http://192.168.1.6:5000";
+  static const String baseUrl = "https://phishing-app-uktc.onrender.com";
 
   static Future<List<HistoryItem>> buscarHistorico() async {
     final response = await http.get(Uri.parse("$baseUrl/historico"));

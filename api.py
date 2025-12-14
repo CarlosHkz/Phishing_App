@@ -137,6 +137,22 @@ def limpar_historico():
 
     return jsonify({"mensagem": "Histórico apagado"})
 
+@app.get("/db-test")
+def db_test():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        conn.close()
+        return jsonify({"db": "OK"})
+    except Exception as e:
+        return jsonify({
+            "db": "ERRO",
+            "detalhe": str(e)
+        }), 500
+
+
 # ------------------------------
 # HEALTH CHECK
 # ------------------------------
