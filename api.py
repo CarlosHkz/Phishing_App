@@ -171,5 +171,3 @@ def home():
             "db": "erro",
             "detalhe": str(e)
         })
-
-n
