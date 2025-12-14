@@ -26,6 +26,7 @@ def get_db():
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
+        connect_timeout=5
     )
 
 # ------------------------------
@@ -39,39 +40,51 @@ def verificar():
     if not url:
         return jsonify({"erro": "URL não fornecida"}), 400
 
-    payload = {
-        "client": {"clientId": "phishblocx", "clientVersion": "1.0"},
-        "threatInfo": {
-            "threatTypes": [
-                "MALWARE",
-                "SOCIAL_ENGINEERING",
-                "UNWANTED_SOFTWARE",
-                "POTENTIALLY_HARMFUL_APPLICATION",
-            ],
-            "platformTypes": ["ANY_PLATFORM"],
-            "threatEntryTypes": ["URL"],
-            "threatEntries": [{"url": url}],
-        },
-    }
+    try:
+        payload = {
+            "client": {"clientId": "phishblocx", "clientVersion": "1.0"},
+            "threatInfo": {
+                "threatTypes": [
+                    "MALWARE",
+                    "SOCIAL_ENGINEERING",
+                    "UNWANTED_SOFTWARE",
+                    "POTENTIALLY_HARMFUL_APPLICATION",
+                ],
+                "platformTypes": ["ANY_PLATFORM"],
+                "threatEntryTypes": ["URL"],
+                "threatEntries": [{"url": url}],
+            },
+        }
 
-    response = requests.post(API_URL, json=payload)
-    result = response.json()
+        response = requests.post(API_URL, json=payload, timeout=15)
+        result = response.json()
 
-    seguro = "matches" not in result
-    detalhes = result.get("matches", [])
+        seguro = "matches" not in result
+        detalhes = result.get("matches", [])
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO historico_urls (url, is_safe)
-        VALUES (%s, %s)
-        """,
-        (url, seguro),
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    except Exception as e:
+        return jsonify({
+            "erro": "Falha ao consultar Safe Browsing",
+            "detalhe": str(e)
+        }), 500
+
+    # ⬇️ SALVAR NO HISTÓRICO (SEM QUEBRAR)
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO historico_urls (url, is_safe)
+            VALUES (%s, %s)
+            """,
+            (url, seguro),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        # não quebra o app
+        print("Erro ao salvar histórico:", e)
 
     return jsonify({
         "url": url,
@@ -84,29 +97,31 @@ def verificar():
 # ------------------------------
 @app.get("/historico")
 def historico():
-    conn = get_db()
-    cur = conn.cursor()
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-    cur.execute("""
-        SELECT url, is_safe, data_verificacao
-        FROM historico_urls
-        ORDER BY data_verificacao DESC
-    """)
-    rows = cur.fetchall()
+        cur.execute("""
+            SELECT url, is_safe, data_verificacao
+            FROM historico_urls
+            ORDER BY data_verificacao DESC
+        """)
+        rows = cur.fetchall()
 
-    cur.close()
-    conn.close()
+        cur.close()
+        conn.close()
 
-    historico = [
-        {
-            "url": row[0],
-            "is_safe": row[1],
-            "data": row[2].strftime("%d/%m/%Y %H:%M")
-        }
-        for row in rows
-    ]
+        return jsonify([
+            {
+                "url": r[0],
+                "is_safe": r[1],
+                "data": r[2].strftime("%d/%m/%Y %H:%M")
+            }
+            for r in rows
+        ])
+    except Exception as e:
+        return jsonify([])  # nunca quebra o app
 
-    return jsonify(historico)
 
 # ------------------------------
 # LIMPAR HISTÓRICO
