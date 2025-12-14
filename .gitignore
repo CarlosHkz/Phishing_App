@@ -15,7 +15,6 @@ migrate_working_dir/
 # Arquivos locais da API (ignorar)
 .env
 db.py
-requirements.txt
 
 # IntelliJ related
 *.iml
