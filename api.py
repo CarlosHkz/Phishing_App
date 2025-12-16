@@ -4,6 +4,7 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -40,6 +41,10 @@ def verificar():
     if not url:
         return jsonify({"erro": "URL não fornecida"}), 400
 
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return jsonify({"erro": "URL inválida"}), 400
+
     try:
         payload = {
             "client": {"clientId": "phishblocx", "clientVersion": "1.0"},
@@ -68,7 +73,7 @@ def verificar():
             "detalhe": str(e)
         }), 500
 
-    # ⬇️ SALVAR NO HISTÓRICO (SEM QUEBRAR)
+    # SALVAR NO HISTÓRICO
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -83,7 +88,6 @@ def verificar():
         cur.close()
         conn.close()
     except Exception as e:
-        # não quebra o app
         print("Erro ao salvar histórico:", e)
 
     return jsonify({
@@ -91,6 +95,7 @@ def verificar():
         "seguro": seguro,
         "detalhes": detalhes
     })
+
 
 # ------------------------------
 # LISTAR HISTÓRICO
@@ -120,12 +125,10 @@ def historico():
             for r in rows
         ])
     except Exception as e:
-        return jsonify([])  # nunca quebra o app
+        return jsonify([]) 
 
-
-# ------------------------------
 # LIMPAR HISTÓRICO
-# ------------------------------
+
 @app.delete("/historico")
 def limpar_historico():
     conn = get_db()
@@ -152,10 +155,8 @@ def db_test():
             "detalhe": str(e)
         }), 500
 
+#trestes 
 
-# ------------------------------
-# HEALTH CHECK
-# ------------------------------
 @app.get("/")
 def home():
     try:
