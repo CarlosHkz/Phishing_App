@@ -11,15 +11,11 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# ------------------------------
-# CONFIG SAFE BROWSING
-# ------------------------------
 API_KEY = os.getenv("SAFE_BROWSING_API_KEY")
 API_URL = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY}"
 
-# ------------------------------
-# DB CONNECTION
-# ------------------------------
+#conexao banco
+
 def get_db():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
@@ -30,9 +26,9 @@ def get_db():
         connect_timeout=5
     )
 
-# ------------------------------
-# VERIFICAR LINK
-# ------------------------------
+
+# Verificar o link
+
 @app.post("/verificar")
 def verificar():
     data = request.json
@@ -97,9 +93,8 @@ def verificar():
     })
 
 
-# ------------------------------
-# LISTAR HISTÓRICO
-# ------------------------------
+#listar histotico postman
+
 @app.get("/historico")
 def historico():
     try:
@@ -127,7 +122,7 @@ def historico():
     except Exception as e:
         return jsonify([]) 
 
-# LIMPAR HISTÓRICO
+#delete historico
 
 @app.delete("/historico")
 def limpar_historico():
