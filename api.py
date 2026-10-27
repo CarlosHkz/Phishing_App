@@ -5,6 +5,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+from flask import Flask, jsonify, request 
+from padroes import analisar\_padroes\_url
 
 load_dotenv()
 
