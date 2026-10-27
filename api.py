@@ -29,21 +29,25 @@ def get_db():
 
 # Verificar o link
 
-@app.post("/verificar")
+@app.route("/verificar", methods=["POST"])
 def verificar():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     url = data.get("url")
 
     if not url:
         return jsonify({"erro": "URL não fornecida"}), 400
 
     parsed = urlparse(url)
+
     if not parsed.scheme or not parsed.netloc:
         return jsonify({"erro": "URL inválida"}), 400
 
     try:
         payload = {
-            "client": {"clientId": "phishblocx", "clientVersion": "1.0"},
+            "client": {
+                "clientId": "phishblocx",
+                "clientVersion": "1.0"
+            },
             "threatInfo": {
                 "threatTypes": [
                     "MALWARE",
@@ -57,18 +61,31 @@ def verificar():
             },
         }
 
-        response = requests.post(API_URL, json=payload, timeout=15)
+        response = requests.post(
+            API_URL,
+            json=payload,
+            timeout=15
+        )
+        response.raise_for_status()
         result = response.json()
 
         seguro = "matches" not in result
         detalhes = result.get("matches", [])
+
+        padroes = analisar_padroes_url(url)
+
+        return jsonify({
+            "url": url,
+            "seguro": seguro,
+            "detalhes": detalhes,
+            "padroes": padroes,
+        })
 
     except Exception as e:
         return jsonify({
             "erro": "Falha ao consultar Safe Browsing",
             "detalhe": str(e)
         }), 500
-
     # SALVAR NO HISTÓRICO
     try:
         conn = get_db()
